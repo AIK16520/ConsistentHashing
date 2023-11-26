@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import csv
 SEED=480
+
 """
 LOADING DATA SETS
 """
@@ -25,17 +26,23 @@ Methods:
     
 """
 class Server:
-    def __init__(self, name):
+    def __init__(self, name,capacity):
         self.name = name
-        self.requests = []
+        self.requests = [""]
+        self.capacity=capacity
+        self.requests = [""]*self.capacity
 
     def add_request(self, request):
-        self.requests.append(request)
+        if self.requests[self.capacity-1]=="":
+            self.requests.append(request)
+        else:
+            print("SERVER FULL")
 
     def display_requests(self):
         print(f"Requests for Server {self.name}:")
         for request in self.requests:
-            print(request)
+            if request!="":
+                print(request)
 
 """
     Represents a consistent hash ring for distributing servers and requests.
@@ -59,6 +66,8 @@ class ConsistentHashRing:
         self.ring=[""]*self.totalNodes
         self.servers=servers
         self.requests=requests
+        self.totalReq=0
+        self.totalServer=0
         
 
 
@@ -73,23 +82,55 @@ class ConsistentHashRing:
             while self.ring[key]=="":
                 key+=1
             self.ring[key].add_request(request)
-    def add_multiple_Servers(self, number):
+    def add_multiple_Servers(self, number,capacity):
         for x in range(number):
-            self.add_Server(f"Server{x}")
+            self.add_Server(f"Server{x}",capacity)
 
-    def add_Server(self, Server_name):
-        newServer=Server(Server_name)
+    def add_Server(self, Server_name,capacity):
+        newServer=Server(Server_name,capacity)
         key=mmh3.hash(newServer.name,SEED)%self.totalNodes
         while self.ring[key]!="":
             key+=math.ceil(self.totalNodes/16)
-        
+        self.totalServer+=1
         self.ring[key]=newServer
+        temp=[]
+        for server in self.ring:
+            if server!="":
+                for x in range (math.ceil(self.totalNodes/self.totalServer)):
+                    tempReq=server.requests[x]
+                    temp.append(tempReq)
+                    newServer.add_request(tempReq)
+        
+        
+
+    def delete_Server(self,Server_name):
+        key=mmh3.hash(Server_name,SEED)%self.totalNodes
+        print(f"temp is noth")
+        temp=[]
+        print(f"server is {self.ring[key].name}")
+        if self.ring[key].name==Server_name:
+            print("in if")
+            
+            temp=self.ring[key].requests
+            
+            self.ring[key]=""
+        print(f"tmep size is {len(temp)}")
+        
+        for req in range (len(temp)):
+            
+            if temp[req]!="":
+                self.add_newRequest(temp[req])
+            
+        print(f"server is later {self.ring[key]}")
+        
+
     def add_newRequest(self, request):
         key=mmh3.hash(request,SEED)%self.totalNodes
         while self.ring[key]=="":
             key+=1
             key=key%self.totalNodes
         self.ring[key].add_request(request)
+        self.totalReq+=1
     def display_ring(self):
         for x in range(self.totalNodes):
             if self.ring[x]=="":
@@ -104,7 +145,7 @@ ring = ConsistentHashRing(totalNodes=8)
 
     
 
-ring.add_multiple_Servers(5) 
+ring.add_multiple_Servers(5,2) 
 
 
 print("Initial Hash Ring:")
@@ -126,7 +167,7 @@ TESTING USING DATASET
 print("WITH DS")
 DsRing=ConsistentHashRing(totalNodes=500)
 
-DsRing.add_multiple_Servers(100)
+DsRing.add_multiple_Servers(100,100)
 
 all_requests = []
 
@@ -139,6 +180,8 @@ with open(testingFile, 'r') as file:
 for req in all_requests:
     
     DsRing.add_newRequest(req)
-
+print("BEFORE DELETE")
 DsRing.display_ring()
-
+DsRing.delete_Server("Server93")
+print("AFTER DELETE")
+DsRing.display_ring()
