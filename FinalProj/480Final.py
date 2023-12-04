@@ -37,12 +37,22 @@ class Server:
             self.requests.append(request)
         else:
             print("SERVER FULL")
+    def numRequests(self):
 
-    def display_requests(self):
-        print(f"Requests for Server {self.name}:")
+        c=0
         for request in self.requests:
             if request!="":
-                print(request)
+                c+=1
+        return c
+
+
+    def display_requests(self):
+        c=0
+        for request in self.requests:
+            if request!="":
+                c+=1
+        print(f"Capacity for Server {self.name}: {c}/{self.capacity} ")
+        
 
 """
     Represents a consistent hash ring for distributing servers and requests.
@@ -69,8 +79,6 @@ class ConsistentHashRing:
         self.totalReq=0
         self.totalServer=0
         
-
-
         for server in self.servers:
             key=mmh3.hash(server,SEED)%self.totalNodes
             while self.ring[key]!="":
@@ -105,23 +113,23 @@ class ConsistentHashRing:
 
     def delete_Server(self,Server_name):
         key=mmh3.hash(Server_name,SEED)%self.totalNodes
-        print(f"temp is noth")
+        
         temp=[]
-        print(f"server is {self.ring[key].name}")
+        
         if self.ring[key].name==Server_name:
-            print("in if")
+            
             
             temp=self.ring[key].requests
             
             self.ring[key]=""
-        print(f"tmep size is {len(temp)}")
+        
         
         for req in range (len(temp)):
             
             if temp[req]!="":
                 self.add_newRequest(temp[req])
             
-        print(f"server is later {self.ring[key]}")
+        
         
 
     def add_newRequest(self, request):
@@ -133,10 +141,31 @@ class ConsistentHashRing:
         self.totalReq+=1
     def display_ring(self):
         for x in range(self.totalNodes):
-            if self.ring[x]=="":
-                print (f"node {x} is empty")
-            else:
+            if self.ring[x]!="":
+                
                 self.ring[x].display_requests()
+    def calculate_load_distribution(self):
+        used_capacity=0
+        total_capacity=0
+
+        for server in self.ring:
+            used_capacity+=server.numRequests()
+            total_capacity+=server.capacity
+        
+        return used_capacity/total_capacity
+        
+            
+        
+        used_capacity = sum(sum(1 for req in server.requests if req != "") for server in self.ring if server != "")
+        total_capacity = sum(server.capacity for server in self.ring if server != "")
+        return used_capacity / total_capacity if total_capacity != 0 else 0
+
+    def get_total_requests(self):
+        return self.totalReq
+
+    def get_total_servers(self):
+        return self.totalServer
+
 
 """
 TESTING RING WITH RANDOM 5 SERVERS
@@ -165,7 +194,7 @@ ring.display_ring()
 TESTING USING DATASET
 """
 print("WITH DS")
-DsRing=ConsistentHashRing(totalNodes=500)
+DsRing=ConsistentHashRing(totalNodes=50000)
 
 DsRing.add_multiple_Servers(100,100)
 
@@ -180,8 +209,17 @@ with open(testingFile, 'r') as file:
 for req in all_requests:
     
     DsRing.add_newRequest(req)
-print("BEFORE DELETE")
-DsRing.display_ring()
-DsRing.delete_Server("Server93")
-print("AFTER DELETE")
-DsRing.display_ring()
+
+load_distribution = DsRing.calculate_load_distribution()
+total_requests = DsRing.get_total_requests()
+total_servers = DsRing.get_total_servers()
+efficiency = DsRing.calculate_efficiency()
+load_balancing = DsRing.calculate_load_balancing()
+scaling = DsRing.calculate_scaling()
+
+print(f"Load Distribution: {load_distribution}")
+print(f"Total Requests: {total_requests}")
+print(f"Total Servers: {total_servers}")
+print(f"Efficiency: {efficiency}")
+print(f"Load Balancing: {load_balancing}")
+print(f"Scaling: {scaling}")
