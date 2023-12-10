@@ -172,3 +172,59 @@ class ConsistentHashRing:
 
     def get_total_servers(self):
         return self.totalServer
+    
+"""
+TESTING RING WITH RANDOM 5 SERVERS
+"""
+ring = ConsistentHashRing(totalNodes=8)
+
+    
+
+ring.add_multiple_Servers(5,2) 
+
+
+print("Initial Hash Ring:")
+ring.display_ring()
+
+
+ring.add_newRequest("GET /api/data")
+ring.add_newRequest("POST /api/update")
+ring.add_newRequest("GET /api/users")
+
+    # Display the updated ring with requests
+print("\nUpdated Hash Ring with Requests:")
+ring.display_ring()
+
+
+"""
+TESTING USING DATASET
+"""
+print("WITH DS")
+DsRing=ConsistentHashRing(totalNodes=50000, servers=[], requests=[])
+
+DsRing.add_multiple_Servers(100,100)
+
+all_requests = []
+
+with open(testingFile, 'r') as file:
+    csv_reader = csv.reader(file)
+    for row in csv_reader:
+        if row:  # Check if the row is not empty
+            all_requests.append(row[0])
+
+for req in all_requests:
+    DsRing.add_newRequest(req)
+
+load_distribution = DsRing.calculate_load_distribution()
+total_requests = DsRing.get_total_requests()
+total_servers = DsRing.get_total_servers()
+efficiency = DsRing.calculate_efficiency()
+load_balancing = DsRing.calculate_load_balancing()
+scaling = DsRing.calculate_scaling()
+
+print(f"Load Distribution: {load_distribution}")
+print(f"Total Requests: {total_requests}")
+print(f"Total Servers: {total_servers}")
+print(f"Efficiency: {efficiency}")
+print(f"Load Balancing: {load_balancing}")
+print(f"Scaling: {scaling}")
