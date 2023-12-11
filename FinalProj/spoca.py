@@ -81,14 +81,14 @@ class ConsistentHashRing:
         self.totalServer=0
         self.totalCapacity=0
         
-        self.totalServer=range(self.servers)
+        self.totalServer=len(self.servers)
         for server in self.servers:
             self.totalCapacity+=server.capacity
 
         for request in self.requests:
-            key=mmh3(request,SEED)%self.totalNodes
+            key=murmurhash3_32(request,SEED)%self.totalNodes
             while key<self.totalCapacity:
-                key=mmh3(key,SEED)%self.totalNodes
+                key=murmurhash3_32(key,SEED)%self.totalNodes
             serverKey=-1
             while key>0:
                 serverKey+=1
@@ -124,9 +124,9 @@ class ConsistentHashRing:
                 self.add_newRequest(freeRequest)
 
     def add_newRequest(self, request):
-        key=mmh3.hash(request,SEED)%self.totalNodes
+        key=murmurhash3_32(request,SEED)%self.totalNodes
         while key<self.totalCapacity:
-            key=mmh3(key,SEED)%self.totalNodes
+            key=murmurhash3_32(key,SEED)%self.totalNodes
         serverKey=-1
         while key>0:
             serverKey+=1
@@ -138,9 +138,9 @@ class ConsistentHashRing:
         self.totalReq+=1
     
     def findServerKey(self, request):
-        key=mmh3.hash(request,SEED)%self.totalNodes
+        key=murmurhash3_32(request,SEED)%self.totalNodes
         while key<self.totalCapacity:
-            key=mmh3(key,SEED)%self.totalNodes
+            key=murmurhash3_32(key,SEED)%self.totalNodes
         serverKey=-1
         while key>0:
             serverKey+=1
