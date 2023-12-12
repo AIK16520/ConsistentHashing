@@ -216,15 +216,6 @@ for req in all_requests:
     DsRing.add_newRequest(req)
 
 load_distribution = DsRing.calculate_load_distribution()
-total_requests = DsRing.get_total_requests()
-total_servers = DsRing.get_total_servers()
-efficiency = DsRing.calculate_efficiency()
-load_balancing = DsRing.calculate_load_balancing()
-scaling = DsRing.calculate_scaling()
+
 
 print(f"Load Distribution: {load_distribution}")
-print(f"Total Requests: {total_requests}")
-print(f"Total Servers: {total_servers}")
-print(f"Efficiency: {efficiency}")
-print(f"Load Balancing: {load_balancing}")
-print(f"Scaling: {scaling}")
