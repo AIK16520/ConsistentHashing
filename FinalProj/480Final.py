@@ -1,3 +1,4 @@
+import collections
 import time
 import seaborn as sns
 import math
@@ -82,7 +83,7 @@ Attributes:
     """
 
 class ConsistentHashRing:
-    def __init__(self, totalNodes, servers=[], requests=[]):
+    def __init__(self, totalNodes, servers=set(), requests=[]):
         self.totalNodes=totalNodes
         self.ring=[""]*self.totalNodes
         self.servers=servers
@@ -90,17 +91,17 @@ class ConsistentHashRing:
         self.totalReq=0
         self.totalServer=0
         
-        for server in self.servers:
-            key=mmh3.hash(server,SEED)%self.totalNodes
-            while self.ring[key]!="":
-                key+=math.ceil(self.totalNodes/16)
-            self.ring[key]=server
+        # for server in self.servers:
+        #     key=mmh3.hash(server,SEED)%self.totalNodes
+        #     while self.ring[key]!="":
+        #         key+=math.ceil(self.totalNodes/16)
+        #     self.ring[key]=server
 
-        for request in self.requests:
-            key=mmh3(request,SEED)%self.totalNodes
-            while self.ring[key]=="":
-                key+=1
-            self.ring[key].add_request(request)
+        # for request in self.requests:
+        #     key=mmh3(request,SEED)%self.totalNodes
+        #     while self.ring[key]=="":
+        #         key+=1
+        #     self.ring[key].add_request(request)
     def add_multiple_Servers(self, number,capacity):
         for x in range(number):
             self.add_Server(f"Server{x}",capacity)
@@ -121,6 +122,7 @@ class ConsistentHashRing:
                     tempReq=server.requests[x]
                     temp.append(tempReq)
                     newServer.add_request(tempReq)
+        self.servers.add(newServer)
         
         
 
@@ -227,31 +229,31 @@ class ConsistentHashRing:
 
 
 
-"""
-TESTING RING WITH RANDOM 5 SERVERS
-"""
-ring = ConsistentHashRing(totalNodes=8)
+# """
+# TESTING RING WITH RANDOM 5 SERVERS
+# """
+# ring = ConsistentHashRing(totalNodes=8)
 
     
 
-ring.add_multiple_Servers(5,2) 
+# ring.add_multiple_Servers(5,2) 
 
 
-ring.add_newRequest("GET /api/data")
-ring.add_newRequest("POST /api/update")
-ring.add_newRequest("GET /api/users")
-ring.add_newRequest("GET /api/userdsds")
-ring.add_newRequest("GET /api/useasdsdssdrs")
-ring.add_newRequest("DELETE /api/users")
-ring.add_newRequest("PUT /api/users")
-ring.add_newRequest("PATCH /api/users1")
-ring.add_newRequest("PUT /api/users123")
-ring.add_newRequest("DELETE /api/users123")
+# ring.add_newRequest("GET /api/data")
+# ring.add_newRequest("POST /api/update")
+# ring.add_newRequest("GET /api/users")
+# ring.add_newRequest("GET /api/userdsds")
+# ring.add_newRequest("GET /api/useasdsdssdrs")
+# ring.add_newRequest("DELETE /api/users")
+# ring.add_newRequest("PUT /api/users")
+# ring.add_newRequest("PATCH /api/users1")
+# ring.add_newRequest("PUT /api/users123")
+# ring.add_newRequest("DELETE /api/users123")
 
 
-    # Display the updated ring with requests
-print("\nUpdated Hash Ring with Requests:")
-ring.display_ring()
+#     # Display the updated ring with requests
+# print("\nUpdated Hash Ring with Requests:")
+# ring.display_ring()
 
 
 all_requests = []
@@ -261,7 +263,7 @@ with open(dSet, 'r',errors="ignore") as file:
     for row in csv_reader:
         if row:
             if len(all_requests)<DATASIZE:
-                all_requests.append(row[1])
+                all_requests.append(row[2])
 
 # print("WITH DS")
 # DsRing=ConsistentHashRing(totalNodes=5000)
@@ -276,7 +278,7 @@ with open(dSet, 'r',errors="ignore") as file:
 
 print("expirement")
 
-def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_requests, heavy_hitters_threshold):
+def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_requests, threshold):
     # Initialize ConsistentHashRing
     ring = ConsistentHashRing(total_nodes)
 
@@ -290,8 +292,8 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     health_status_data = []
     time_taken=[]
     latency=[]
-    heavy_hitters_map = {}
-    infrequent_hitters_map = {}
+    timestamps=[]
+  
 
     for i in range(num_servers):
         print(i)
@@ -300,8 +302,10 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     
     print("adding req")
     for i in range(len(all_requests)):
+        time=(ring.add_newRequest(all_requests[i]))
         
-        time_taken.append(ring.add_newRequest(all_requests[i]))
+        
+        time_taken.append(time)
         loadDist.append(ring.calculate_load_distribution())
         deadServer.append(ring.get_dead_servers())
         active_servers_data.append(ring.get_active_servers())
@@ -309,34 +313,34 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
         health_status_data.append([server.numRequests() for server in ring.ring if isinstance(server, Server)])
         server_index = mmh3.hash(all_requests[i], SEED) % total_nodes
         latency.append((i,server_index,time_taken[i]))
+    
+    
+
+
+    for server in ring.servers:
         
-    heavy_hitters_map = {}
-    infrequent_hitters_map = {}
-
-    for server in ring.ring:
+        print (server.name)
         if isinstance(server, Server):
-            for request in server.requests:
-                if request != "":
-                    if server.numRequests() >= 0.1*server_capacity:
-                        if request not in heavy_hitters_map:
-                            heavy_hitters_map[request] = set()
-                            heavy_hitters_map[request].add(server.name)
+    
+            
+            countReq=collections.Counter(server.requests)
+            countReq.pop('')
+            
+            
+            plt.figure(figsize=(8, 5))
+            plt.bar(countReq.keys(), countReq.values())
+            plt.axhline(y=threshold*server_capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server_capacity})')
+            plt.title(f"Heavy Hitters for Server {server.name}")
+            plt.xlabel("Requests")                
+            plt.ylabel("Request Count")
+            plt.xticks(rotation=45, ha='right')
+            plt.show()
+            
 
-                        else:
-                            if request not in infrequent_hitters_map:
-                                infrequent_hitters_map[request] = set()
-                            infrequent_hitters_map[request].add(server.name)
-                            heavy_hitters_map[request].add(server.name)
+    
 
-    for server_index in range(num_servers):
-        heavy_hitter_labels = [request for request, servers in heavy_hitters_map.items() if server_index in servers]
-        infrequent_hitter_labels = [request for request, servers in infrequent_hitters_map.items() if server_index in servers]
 
-        plt.figure(figsize=(8, 8))
-        plt.pie([len(heavy_hitter_labels), len(infrequent_hitter_labels)], labels=['Heavy Hitters', 'Infrequent Hitters'],
-             colors=['skyblue', 'lightcoral'])
-        plt.title(f'Server {server_index} - Hitter Distribution')
-        plt.show()
+   
     plt.figure(figsize=(12, 8))
     plt.plot(loadDist, deadServer, label='Dead Server vs Load Distribution')
     plt.title('System Load Over Time')
@@ -375,7 +379,15 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.grid(True)
     plt.show()
 
-visualization_from_dataset(total_nodes=5000, num_servers=10, server_capacity=80, all_requests=all_requests, heavy_hitters_threshold=5)
+    plt.figure(figsize=(12, 8))
+    plt.scatter(range(0, len(time_taken)), time_taken)
+    plt.title('Time vs. Request Index')
+    plt.xlabel('Request Index')
+    plt.ylabel('Time (seconds)')
+    plt.grid(True)
+    plt.show()
+
+visualization_from_dataset(total_nodes=5000, num_servers=10, server_capacity=110, all_requests=all_requests, threshold=0.25)
 
 
 
