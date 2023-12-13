@@ -5,7 +5,7 @@ import pandas as pd
 import csv
 import random 
 from sklearn.utils import murmurhash3_32
-SEED=480
+SEED=500
 
 """
 LOADING DATA SETS
@@ -30,31 +30,24 @@ Methods:
 class Server:
         def __init__(self, name, capacity):
                 self.name = name
-                self.requests = [""]
+                self.requests = []
                 self.capacity=capacity
-                self.requests = [""]*self.capacity
                 self.severOverload = 0
                 self.alive = True
 
         def add_request(self, request):
-                if self.requests[self.capacity-1]=="":
+                if len(self.requests) < self.capacity:
                         self.requests.append(request)
                 else:
                         print("SERVER FULL")
                         self.severOverload += 1
+                        self.alive = False
 
         def numRequests(self):
-                c=0
-                for request in self.requests:
-                        if request!="":
-                                c+=1
-                return c
+                return len(self.requests)
 
         def display_requests(self):
-                c=0
-                for request in self.requests:
-                        if request!="":
-                                c+=1
+                c=len(self.requests)
                 print(f"Capacity for Server {self.name}: {c}/{self.capacity} ")
 
 """
@@ -87,7 +80,7 @@ class ConsistentHashRing:
 
         for request in self.requests:
             key=murmurhash3_32(request,SEED)%self.totalNodes
-            while key<self.totalCapacity:
+            while key>=self.totalCapacity:
                 key=murmurhash3_32(key,SEED)%self.totalNodes
             serverKey=-1
             while key>0:
@@ -113,40 +106,35 @@ class ConsistentHashRing:
         key=0
         while self.servers[key].name != Server_name and key < self.totalServer:
             key+=1
+        freeRequests=[]
         if key < self.totalServer:
             self.servers[key].alive = False
-        freeRequests=[]
-        if self.ring[key].name==Server_name:
             freeRequests=self.servers[key].requests
-        
         for freeRequest in freeRequests:
-            if freeRequest!="":
-                self.add_newRequest(freeRequest)
+            self.add_newRequest(freeRequest)
 
     def add_newRequest(self, request):
-        key=murmurhash3_32(request,SEED)%self.totalNodes
-        while key<self.totalCapacity:
-            key=murmurhash3_32(key,SEED)%self.totalNodes
-        serverKey=-1
-        while key>0:
-            serverKey+=1
-            key-=self.servers[serverKey].capacity
-        while self.ring[key]=="":
-            key+=1
-            key=key%self.totalNodes
-        self.ring[key].add_request(request)
+        print("Finding server for "+request)
+        serverKey=self.findServerKey(request)
+        print("Placed in server "+self.servers[serverKey].name)
+        self.servers[serverKey].add_request(request)
         self.totalReq+=1
     
     def findServerKey(self, request):
+        # print("Total capacity: "+str(self.totalCapacity))
         key=murmurhash3_32(request,SEED)%self.totalNodes
-        while key<self.totalCapacity:
+        while key>=self.totalCapacity:
+            # print("New key: "+str(key))
             key=murmurhash3_32(key,SEED)%self.totalNodes
+        print("Key is "+str(key))
         serverKey=-1
         while key>0:
             serverKey+=1
+            print("serverKey: "+str(serverKey))
             key-=self.servers[serverKey].capacity
         if self.servers[serverKey].alive:
             return serverKey
+        print(self.servers[serverKey])
         return self.findServerKey(key)
 
     def display_ring(self):
@@ -176,9 +164,7 @@ class ConsistentHashRing:
 """
 TESTING RING WITH RANDOM 5 SERVERS
 """
-ring = ConsistentHashRing(totalNodes=8)
-
-    
+ring = ConsistentHashRing(totalNodes=20)
 
 ring.add_multiple_Servers(5,2) 
 
@@ -218,13 +204,13 @@ for req in all_requests:
 load_distribution = DsRing.calculate_load_distribution()
 total_requests = DsRing.get_total_requests()
 total_servers = DsRing.get_total_servers()
-efficiency = DsRing.calculate_efficiency()
-load_balancing = DsRing.calculate_load_balancing()
-scaling = DsRing.calculate_scaling()
+# efficiency = DsRing.calculate_efficiency()
+# load_balancing = DsRing.calculate_load_balancing()
+# scaling = DsRing.calculate_scaling()
 
 print(f"Load Distribution: {load_distribution}")
 print(f"Total Requests: {total_requests}")
 print(f"Total Servers: {total_servers}")
-print(f"Efficiency: {efficiency}")
-print(f"Load Balancing: {load_balancing}")
-print(f"Scaling: {scaling}")
+# print(f"Efficiency: {efficiency}")
+# print(f"Load Balancing: {load_balancing}")
+# print(f"Scaling: {scaling}")
