@@ -124,12 +124,17 @@ class ConsistentHashRing:
         self.totalReq+=1
     
     def findServerKey(self, request):
-        # print("Total capacity: "+str(self.totalCapacity))
-        key=murmurhash3_32(request,SEED)%self.totalNodes
+        key=0
+        if request in self.recentRequests:
+            key=murmurhash3_32(self.requestHistory[request],SEED)%self.totalNodes
+        else:
+            # print("Total capacity: "+str(self.totalCapacity))
+            key=murmurhash3_32(request,SEED)%self.totalNodes
         while key>=self.totalCapacity:
             # print("New key: "+str(key))
             key=murmurhash3_32(key,SEED)%self.totalNodes
         print("Key is "+str(key))
+        tempKey=key
         serverKey=-1
         while key>0:
             serverKey+=1
@@ -138,6 +143,11 @@ class ConsistentHashRing:
         if self.servers[serverKey].alive:
             return serverKey
         print(self.servers[serverKey])
+        if len(self.recentRequests)>=self.historyCapacity:
+            removedKey=self.recentRequests.pop(0)
+            self.requestHistory.pop(removedKey)
+        self.recentRequests.append(request)
+        self.requestHistory[request]=tempKey
         return self.findServerKey(key)
 
     def display_ring(self):
