@@ -1,5 +1,6 @@
 import collections
 import time
+import numpy as np
 import seaborn as sns
 import math
 from matplotlib import pyplot as plt
@@ -200,10 +201,7 @@ class ConsistentHashRing:
                     key+=1
                     key=key%self.totalNodes
             while self.ring[key].add_request(request)==False:
-                count+=1
-                if count>=100:
-                    
-                    return
+               
                 key+=1
                 key=key%self.totalNodes
                 while self.ring[key]=="" :
@@ -216,6 +214,7 @@ class ConsistentHashRing:
             return end-start
         else:
             return False
+        
     def display_ring(self):
         for x in range(self.totalNodes):
             
@@ -294,10 +293,14 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     latency=[]
     timestamps=[]
   
-
-    for i in range(num_servers):
+    
+    for i in range(num_servers//2):
         print(i)
-        ring.add_Server(f"Server{i}", server_capacity)
+        ring.add_Server(f"Server{i}", server_capacity[0])
+    for x in range(num_servers//2,num_servers):
+        print(x)
+        
+        ring.add_Server(f"Server{x}", server_capacity[1])
 
     
     print("adding req")
@@ -316,6 +319,12 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     
     
 
+    heavy_hitters_map={}
+    infrequent_hitter_map={}
+    for server in ring.servers:
+        heavy_hitters_map[server.name]=0
+        infrequent_hitter_map[server.name]=0
+
 
     for server in ring.servers:
         
@@ -325,11 +334,22 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
             
             countReq=collections.Counter(server.requests)
             countReq.pop('')
+            for key,val in countReq.items():
+                if val>=threshold*server.capacity:
+                    
+                    heavy_hitters_map[server.name]+=1
+                 
+                else:
+                    
+                    infrequent_hitter_map[server.name]+=1
+                  
+                
+            
             
             
             plt.figure(figsize=(8, 5))
             plt.bar(countReq.keys(), countReq.values())
-            plt.axhline(y=threshold*server_capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server_capacity})')
+            plt.axhline(y=threshold*server.capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server.capacity})')
             plt.title(f"Heavy Hitters for Server {server.name}")
             plt.xlabel("Requests")                
             plt.ylabel("Request Count")
@@ -379,15 +399,37 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.grid(True)
     plt.show()
 
-    plt.figure(figsize=(12, 8))
-    plt.scatter(range(0, len(time_taken)), time_taken)
-    plt.title('Time vs. Request Index')
-    plt.xlabel('Request Index')
-    plt.ylabel('Time (seconds)')
-    plt.grid(True)
+
+
+    ts = int(server.capacity * threshold)
+
+    
+
+    # Count heavy hitters and infrequent hitters for each server
+
+    heavy_hitter_counts = [(heavy_hitters_map[server.name]) if server.name in heavy_hitters_map else 0 for server in ring.servers]
+    infrequent_hitter_counts = [(infrequent_hitter_map[server.name]) if server.name in infrequent_hitter_map else 0 for server in ring.servers]
+    print(heavy_hitter_counts,heavy_hitters_map)
+    print(infrequent_hitter_counts,infrequent_hitter_map)
+    # Visualize heavy hitters and infrequent hitters for each server
+    bar_width = 0.35
+    bar_positions = np.arange(num_servers)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    bar1 = ax.bar(bar_positions, heavy_hitter_counts, bar_width, label='Heavy Hitters')
+    bar2 = ax.bar(bar_positions, infrequent_hitter_counts, bar_width, label='Infrequent Hitters', bottom=heavy_hitter_counts)
+
+    ax.set_xlabel('Server Index')
+    ax.set_ylabel('Count')
+    ax.set_title('Counts of Heavy Hitters and Infrequent Hitters for Each Server')
+    ax.set_xticks(bar_positions)
+    ax.set_xticklabels([f'Server {i}' for i in range(num_servers)])
+    ax.legend()
+
     plt.show()
 
-visualization_from_dataset(total_nodes=5000, num_servers=10, server_capacity=110, all_requests=all_requests, threshold=0.25)
+visualization_from_dataset(total_nodes=5000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
 
 
 
