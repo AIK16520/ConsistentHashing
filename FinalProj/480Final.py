@@ -354,7 +354,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
             plt.xlabel("Requests")                
             plt.ylabel("Request Count")
             plt.xticks(rotation=45, ha='right')
-            plt.show()
+            figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-HHFS{server.name}.png")
+            plt.savefig(figure)
+            # plt.show()
             
 
     
@@ -367,7 +369,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Load Distribution')
     plt.ylabel('Dead Server')
     plt.legend()
-    plt.show()
+    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-SLOT.png")
+    plt.savefig(figure)
+    # plt.show()
 
 
     plt.figure(figsize=(12, 8))
@@ -379,7 +383,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Iteration')
     plt.ylabel('Number of Servers')
     plt.legend()
-    plt.show()
+    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-SHSOI.png")
+    plt.savefig(figure)
+    # plt.show()
     health_status_per_server = list(zip(*health_status_data))
 
     
@@ -389,7 +395,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.title('Server Health Status Heatmap Over Iterations')
     plt.xlabel('Iteration')
     plt.ylabel('Server Index')
-    plt.show()
+    figure=os.path.join(currDir,"480FinalOutputs","SHSHOI.png")
+    plt.savefig(figure)
+    # plt.show()
 
     plt.figure(figsize=(12, 8))
     plt.scatter(range(1, len(time_taken) + 1), time_taken)
@@ -397,7 +405,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Request Index')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
-    plt.show()
+    figure=os.path.join(currDir,"480FinalOutputs","TVRI.png")
+    plt.savefig(figure)
+    # plt.show()
 
 
 
@@ -426,8 +436,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     ax.set_xticks(bar_positions)
     ax.set_xticklabels([f'Server {i}' for i in range(num_servers)])
     ax.legend()
-
-    plt.show()
+    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-COHHAIHFES.png")
+    plt.savefig(figure)
+    # plt.show()
 
 visualization_from_dataset(total_nodes=5000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
 
