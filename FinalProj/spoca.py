@@ -6,6 +6,7 @@ import csv
 import random 
 from sklearn.utils import murmurhash3_32
 SEED=500
+DATASIZE=1000
 
 """
 LOADING DATA SETS
@@ -166,6 +167,37 @@ class ConsistentHashRing:
     def get_total_servers(self):
         return self.totalServer
     
+    def get_dead_servers(self):
+        dead=0
+        for server in self.servers:
+                if len(server.requests)==server.capacity:
+                        server.alive=False
+                        dead+=1
+        return dead
+    
+    def calculate_load_distribution(self):
+        used_capacity=0
+        total_capacity=0
+        
+        for server in self.servers:
+            used_capacity+=server.numRequests()
+            total_capacity+=server.capacity
+        return float(used_capacity)/total_capacity
+    
+    def get_active_servers(self):
+        not_dead=0
+        for server in self.ring:
+            if server.alive and server.numRequests()>0:
+                not_dead+=1
+        return not_dead
+    
+    def get_alive_servers(self):
+        not_dead=0
+        for server in self.ring:
+            if server.alive:
+                not_dead+=1
+        return not_dead
+
 """
 TESTING RING WITH RANDOM 5 SERVERS
 """

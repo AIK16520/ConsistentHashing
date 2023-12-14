@@ -156,7 +156,7 @@ class ConsistentHashRing:
                 used_capacity+=server.numRequests()
                 total_capacity+=server.capacity
         
-        return used_capacity/total_capacity
+        return float(used_capacity)/total_capacity
         
 
     def get_total_requests(self):
