@@ -76,6 +76,7 @@ class ConsistentHashRing:
         self.recentRequests=[]
         self.requestHistory={}
         self.historyCapacity=100
+        self.extraRun=0
         
         self.totalServer=len(self.servers)
         for server in self.servers:
@@ -141,13 +142,14 @@ class ConsistentHashRing:
             print("serverKey: "+str(serverKey))
             key-=self.servers[serverKey].capacity
         if self.servers[serverKey].alive:
+            if len(self.recentRequests)>=self.historyCapacity:
+                removedKey=self.recentRequests.pop(0)
+                self.requestHistory.pop(removedKey)
+            self.recentRequests.append(request)
+            self.requestHistory[request]=tempKey
             return serverKey
         print(self.servers[serverKey])
-        if len(self.recentRequests)>=self.historyCapacity:
-            removedKey=self.recentRequests.pop(0)
-            self.requestHistory.pop(removedKey)
-        self.recentRequests.append(request)
-        self.requestHistory[request]=tempKey
+        self.extraRun+=1
         return self.findServerKey(key)
 
     def display_ring(self):
