@@ -1,5 +1,6 @@
 import collections
 import time
+import numpy as np
 import seaborn as sns
 import math
 from matplotlib import pyplot as plt
@@ -56,10 +57,16 @@ class Server:
                 c+=1
         return c
     def add_request(self, request, force):
-        if not force and random.random > math.pow(1-float(self.numRequests()-self.matchingRequests(request)), 2):
+        randomNum=random.uniform(0, 1)
+        if not force and randomNum < math.pow(float(self.numRequests()-self.matchingRequests(request))/self.capacity, 2):
+            print("rejected here value was "+str(math.pow(float(self.numRequests()-self.matchingRequests(request))/self.capacity, 2)))
+            print(randomNum)
+            print(self.numRequests())
+            print(self.matchingRequests(request))
+            print(self.capacity)
             return False
         if self.numRequests()<self.capacity:
-            
+            # print("not rejected!")
             self.requests.append(request)
             return True
         else:
@@ -164,7 +171,7 @@ class ConsistentHashRing:
                 used_capacity+=server.numRequests()
                 total_capacity+=server.capacity
         
-        return used_capacity/total_capacity
+        return float(used_capacity)/total_capacity
         
 
     def get_total_requests(self):
@@ -199,7 +206,6 @@ class ConsistentHashRing:
     def add_newRequest(self, request):
         start=time.time()
         
-        count=0
         if self.get_alive_servers()>0:
 
             key=mmh3.hash(request,SEED)%self.totalNodes
@@ -209,10 +215,7 @@ class ConsistentHashRing:
                     key+=1
                     key=key%self.totalNodes
             while self.ring[key].add_request(request, False)==False:
-                count+=1
-                if count>=100:
-                    
-                    return
+               
                 key+=1
                 key=key%self.totalNodes
                 while self.ring[key]=="" :
@@ -303,10 +306,14 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     latency=[]
     timestamps=[]
   
-
-    for i in range(num_servers):
+    
+    for i in range(num_servers//2):
         print(i)
-        ring.add_Server(f"Server{i}", server_capacity)
+        ring.add_Server(f"Server{i}", server_capacity[0])
+    for x in range(num_servers//2,num_servers):
+        print(x)
+        
+        ring.add_Server(f"Server{x}", server_capacity[1])
 
     
     print("adding req")
@@ -325,6 +332,12 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     
     
 
+    heavy_hitters_map={}
+    infrequent_hitter_map={}
+    for server in ring.servers:
+        heavy_hitters_map[server.name]=0
+        infrequent_hitter_map[server.name]=0
+
 
     for server in ring.servers:
         
@@ -334,16 +347,29 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
             
             countReq=collections.Counter(server.requests)
             countReq.pop('')
+            for key,val in countReq.items():
+                if val>=threshold*server.capacity:
+                    
+                    heavy_hitters_map[server.name]+=1
+                 
+                else:
+                    
+                    infrequent_hitter_map[server.name]+=1
+                  
+                
+            
             
             
             plt.figure(figsize=(8, 5))
             plt.bar(countReq.keys(), countReq.values())
-            plt.axhline(y=threshold*server_capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server_capacity})')
+            plt.axhline(y=threshold*server.capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server.capacity})')
             plt.title(f"Heavy Hitters for Server {server.name}")
             plt.xlabel("Requests")                
             plt.ylabel("Request Count")
             plt.xticks(rotation=45, ha='right')
-            plt.show()
+            figure=os.path.join(currDir,"ConsistentRelevantOutputs",f"CHBaseline-HHFS{server.name}.png")
+            plt.savefig(figure)
+            # plt.show()
             
 
     
@@ -356,7 +382,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Load Distribution')
     plt.ylabel('Dead Server')
     plt.legend()
-    plt.show()
+    figure=os.path.join(currDir,"ConsistentRelevantOutputs","CHBaseline-SLOT.png")
+    plt.savefig(figure)
+    # plt.show()
 
 
     plt.figure(figsize=(12, 8))
@@ -368,7 +396,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Iteration')
     plt.ylabel('Number of Servers')
     plt.legend()
-    plt.show()
+    figure=os.path.join(currDir,"ConsistentRelevantOutputs","CHBaseline-SHSOI.png")
+    plt.savefig(figure)
+    # plt.show()
     health_status_per_server = list(zip(*health_status_data))
 
     
@@ -378,7 +408,9 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.title('Server Health Status Heatmap Over Iterations')
     plt.xlabel('Iteration')
     plt.ylabel('Server Index')
-    plt.show()
+    figure=os.path.join(currDir,"ConsistentRelevantOutputs","SHSHOI.png")
+    plt.savefig(figure)
+    # plt.show()
 
     plt.figure(figsize=(12, 8))
     plt.scatter(range(1, len(time_taken) + 1), time_taken)
@@ -386,17 +418,42 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Request Index')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
-    plt.show()
+    figure=os.path.join(currDir,"ConsistentRelevantOutputs","TVRI.png")
+    plt.savefig(figure)
+    # plt.show()
 
-    plt.figure(figsize=(12, 8))
-    plt.scatter(range(0, len(time_taken)), time_taken)
-    plt.title('Time vs. Request Index')
-    plt.xlabel('Request Index')
-    plt.ylabel('Time (seconds)')
-    plt.grid(True)
-    plt.show()
 
-visualization_from_dataset(total_nodes=5000, num_servers=10, server_capacity=110, all_requests=all_requests, threshold=0.25)
+
+    ts = int(server.capacity * threshold)
+
+    
+
+    # Count heavy hitters and infrequent hitters for each server
+
+    heavy_hitter_counts = [(heavy_hitters_map[server.name]) if server.name in heavy_hitters_map else 0 for server in ring.servers]
+    infrequent_hitter_counts = [(infrequent_hitter_map[server.name]) if server.name in infrequent_hitter_map else 0 for server in ring.servers]
+    print(heavy_hitter_counts,heavy_hitters_map)
+    print(infrequent_hitter_counts,infrequent_hitter_map)
+    # Visualize heavy hitters and infrequent hitters for each server
+    bar_width = 0.35
+    bar_positions = np.arange(num_servers)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    bar1 = ax.bar(bar_positions, heavy_hitter_counts, bar_width, label='Heavy Hitters')
+    bar2 = ax.bar(bar_positions, infrequent_hitter_counts, bar_width, label='Infrequent Hitters', bottom=heavy_hitter_counts)
+
+    ax.set_xlabel('Server Index')
+    ax.set_ylabel('Count')
+    ax.set_title('Counts of Heavy Hitters and Infrequent Hitters for Each Server')
+    ax.set_xticks(bar_positions)
+    ax.set_xticklabels([f'Server {i}' for i in range(num_servers)])
+    ax.legend()
+    figure=os.path.join(currDir,"ConsistentRelevantOutputs","CHBaseline-COHHAIHFES.png")
+    plt.savefig(figure)
+    # plt.show()
+
+visualization_from_dataset(total_nodes=5000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
 
 
 

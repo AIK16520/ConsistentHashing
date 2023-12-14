@@ -191,7 +191,6 @@ class ConsistentHashRing:
     def add_newRequest(self, request):
         start=time.time()
         
-        count=0
         if self.get_alive_servers()>0:
 
             key=mmh3.hash(request,SEED)%self.totalNodes
