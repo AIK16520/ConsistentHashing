@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import csv
 SEED=480
-DATASIZE=10000
+DATASIZE=5000
 
 """
 LOADING DATA SETS
@@ -441,13 +441,13 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
 
 #visualization_from_dataset(total_nodes=50000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
 
-serverNum=[10,100,500,1000]
-threshold=[0.1,0.15,0.25,0.5]
-server_cap=[[10,100],[50,500]]
+serverNum=[10,20,50]
+threshold=[0.1,0.25,0.5]
+server_cap=[[100,1000],[500,5000]]
 for x in serverNum:
     for y in threshold:
         for z in server_cap:
-            visualization_from_dataset(total_nodes=50000, num_servers=x, server_capacity=z, all_requests=all_requests, threshold=y)
+            visualization_from_dataset(total_nodes=1000, num_servers=x, server_capacity=z, all_requests=all_requests, threshold=y)
 
 
 
