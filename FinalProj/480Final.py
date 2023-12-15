@@ -9,7 +9,7 @@ import os
 import pandas as pd
 import csv
 SEED=480
-DATASIZE=1000
+DATASIZE=10000
 
 """
 LOADING DATA SETS
@@ -349,11 +349,11 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
             plt.figure(figsize=(8, 5))
             plt.bar(countReq.keys(), countReq.values())
             plt.axhline(y=threshold*server.capacity, color='red', linestyle='--', label=f'Threshold ({threshold*server.capacity})')
-            plt.title(f"Heavy Hitters for Server {server.name}")
+            plt.title(f"Heavy Hitters for Server {server.name} total servers: {num_servers}, threshold{threshold}")
             plt.xlabel("Requests")                
             plt.ylabel("Request Count")
             plt.xticks(rotation=45, ha='right')
-            figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-HHFS{server.name}.png")
+            figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-HHFS{server.name}_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
             plt.savefig(figure)
             # plt.show()
             
@@ -364,11 +364,11 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
    
     plt.figure(figsize=(12, 8))
     plt.plot(loadDist, deadServer, label='Dead Server vs Load Distribution')
-    plt.title('System Load Over Time')
+    plt.title(f'System Load Over Time total servers: {num_servers}, threshold{threshold}')
     plt.xlabel('Load Distribution')
     plt.ylabel('Dead Server')
     plt.legend()
-    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-SLOT.png")
+    figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-SLOT_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
@@ -378,11 +378,11 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.plot(range(1, len(all_requests) + 1), active_servers_data,  color='orange', label='Active Servers')
     plt.plot(range(1, len(all_requests) + 1), alive_servers_data,  color='green', label='Alive Servers')
     
-    plt.title('Server Health Status Over Iterations')
+    plt.title(f'Server Health Status Over Iterations total servers: {num_servers}, threshold{threshold}')
     plt.xlabel('Iteration')
     plt.ylabel('Number of Servers')
     plt.legend()
-    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-SHSOI.png")
+    figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-SHSOI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
     health_status_per_server = list(zip(*health_status_data))
@@ -391,20 +391,20 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.figure(figsize=(12, 8))
     sns.heatmap(health_status_per_server, cmap="YlGnBu", annot=True, fmt="d", xticklabels=1, yticklabels=1)
     
-    plt.title('Server Health Status Heatmap Over Iterations')
+    plt.title(f'Server Health Status Heatmap Over Iterations total servers: {num_servers}, threshold{threshold}')
     plt.xlabel('Iteration')
     plt.ylabel('Server Index')
-    figure=os.path.join(currDir,"480FinalOutputs","SHSHOI.png")
+    figure=os.path.join(currDir,"480FinalOutputs",f"SHSHOI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
     plt.figure(figsize=(12, 8))
     plt.scatter(range(1, len(time_taken) + 1), time_taken)
-    plt.title('Time vs. Request Index')
+    plt.title(f'Time vs. Request Index total servers: {num_servers}, threshold{threshold}')
     plt.xlabel('Request Index')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
-    figure=os.path.join(currDir,"480FinalOutputs","TVRI.png")
+    figure=os.path.join(currDir,"480FinalOutputs",f"TVRI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
@@ -431,15 +431,25 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
 
     ax.set_xlabel('Server Index')
     ax.set_ylabel('Count')
-    ax.set_title('Counts of Heavy Hitters and Infrequent Hitters for Each Server')
+    ax.set_title(f'Counts of Heavy Hitters and Infrequent Hitters for Each Server total servers: {num_servers}, threshold{threshold}')
     ax.set_xticks(bar_positions)
     ax.set_xticklabels([f'Server {i}' for i in range(num_servers)])
     ax.legend()
-    figure=os.path.join(currDir,"480FinalOutputs","CHBaseline-COHHAIHFES.png")
+    figure=os.path.join(currDir,"480FinalOutputs",f"CHBaseline-COHHAIHFES_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
-visualization_from_dataset(total_nodes=5000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
+#visualization_from_dataset(total_nodes=50000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
+
+serverNum=[10,100,500,1000]
+threshold=[0.1,0.15,0.25,0.5]
+server_cap=[[10,100],[50,500]]
+for x in serverNum:
+    for y in threshold:
+        for z in server_cap:
+            visualization_from_dataset(total_nodes=50000, num_servers=x, server_capacity=z, all_requests=all_requests, threshold=y)
+
+
 
 
 
