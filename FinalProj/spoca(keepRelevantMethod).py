@@ -10,7 +10,7 @@ import pandas as pd
 import csv
 import random
 SEED=480
-DATASIZE=10000
+DATASIZE=5000
 
 """
 LOADING DATA SETS
@@ -89,9 +89,9 @@ class ConsistentHashRing:
             self.totalCapacity+=server.capacity
 
         for request in self.requests:
-            key=mmh3.hash(request,SEED)%self.totalNodes
+            key=mmh3.hash(request,SEED)%(self.totalCapacity*2)
             while key>=self.totalCapacity:
-                key=mmh3.hash(key,SEED)%self.totalNodes
+                key=mmh3.hash(key,SEED)%(self.totalCapacity*2)
             serverKey=-1
             while key>0:
                 serverKey+=1
@@ -135,26 +135,26 @@ class ConsistentHashRing:
     
     def findServerKey(self, request):
         # print("Total capacity: "+str(self.totalCapacity))
-        print(request)
-        key=mmh3.hash(request,SEED)%self.totalNodes
+        # print(request)
+        key=mmh3.hash(request,SEED)%(self.totalCapacity*2)
         while key>=self.totalCapacity:
             # print("New key: "+str(key))
-            key=mmh3.hash(bytes(key),SEED)%self.totalNodes
+            key=mmh3.hash(bytes(key),SEED)%(self.totalCapacity*2)
         serverKey=-1
         tempKey=key
         while key>0:
             serverKey+=1
-            print("serverKey: "+str(serverKey))
+            # print("serverKey: "+str(serverKey))
             key-=self.servers[serverKey].capacity
         if self.servers[serverKey].alive:
             lenRequests=len(self.servers[serverKey].requests)
             matchingRequests=self.servers[serverKey].requests.count(request)
             serverCapacity=self.servers[serverKey].capacity
-            if lenRequests!=0 and random.uniform(0, 1) < math.pow(float(lenRequests-matchingRequests)/serverCapacity, 2):
+            if lenRequests!=0 and random.uniform(0, 1) < math.pow(float(lenRequests-matchingRequests*matchingRequests)/serverCapacity, 1):
                 self.extraRun+=1
                 return self.findServerKey(bytes(tempKey))
             return serverKey
-        print(self.servers[serverKey])
+        # print(self.servers[serverKey])
         self.extraRun+=1
         return self.findServerKey(bytes(tempKey))
 
@@ -334,7 +334,7 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
             plt.xlabel("Requests")                
             plt.ylabel("Request Count")
             plt.xticks(rotation=45, ha='right')
-            figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-HHFS{server.name}_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+            figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-HHFS{server.name}_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
             plt.savefig(figure)
             # plt.show()
             
@@ -349,7 +349,7 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Load Distribution')
     plt.ylabel('Dead Server')
     plt.legend()
-    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-SLOT_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-SLOT_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
@@ -363,7 +363,7 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Iteration')
     plt.ylabel('Number of Servers')
     plt.legend()
-    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-SHSOI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-SHSOI_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
     health_status_per_server = list(zip(*health_status_data))
@@ -375,7 +375,7 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.title(f'Server Health Status Heatmap Over Iterations total servers: {num_servers}, threshold{threshold}')
     plt.xlabel('Iteration')
     plt.ylabel('Server Index')
-    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"SHSHOI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"SHSHOI_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
@@ -385,7 +385,7 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     plt.xlabel('Request Index')
     plt.ylabel('Time (seconds)')
     plt.grid(True)
-    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"TVRI_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"TVRI_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
@@ -397,8 +397,8 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
 
     # Count heavy hitters and infrequent hitters for each server
 
-    heavy_hitter_counts = [(heavy_hitters_map[server.name]) if server.name in heavy_hitters_map else 0 for server in ring.servers]
-    infrequent_hitter_counts = [(infrequent_hitter_map[server.name]) if server.name in infrequent_hitter_map else 0 for server in ring.servers]
+    heavy_hitter_counts = [(heavy_hitters_map[server.name]) if server.name in heavy_hitters_map else 0 for server in ring.servers][0:10]
+    infrequent_hitter_counts = [(infrequent_hitter_map[server.name]) if server.name in infrequent_hitter_map else 0 for server in ring.servers][0:10]
     print(heavy_hitter_counts,heavy_hitters_map)
     print(infrequent_hitter_counts,infrequent_hitter_map)
     # Visualize heavy hitters and infrequent hitters for each server
@@ -416,15 +416,29 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     ax.set_xticks(bar_positions)
     ax.set_xticklabels([f'Server {i}' for i in range(num_servers)])
     ax.legend()
-    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-COHHAIHFES_sNum{serverNum}_cap{server_capacity},thold{threshold}.png")
+    figure=os.path.join(currDir,"SpocaRelevantOutputs",f"CHBaseline-COHHAIHFES_sNum{num_servers}_cap{server_capacity},thold{threshold}.png")
     plt.savefig(figure)
     # plt.show()
 
 #visualization_from_dataset(total_nodes=5000, num_servers=9, server_capacity=[50,500], all_requests=all_requests, threshold=0.15)
-serverNum=[10,100,500,1000]
-threshold=[0.1,0.15,0.25,0.5]
-server_cap=[[10,100],[50,500]]
-for x in serverNum:
-    for y in threshold:
-        for z in server_cap:
-            visualization_from_dataset(total_nodes=50000, num_servers=x, server_capacity=z, all_requests=all_requests, threshold=y)
+print("visuals starting")
+visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[100,1000], all_requests=all_requests.copy(), threshold=0.1)
+print("visual 1 done")
+# visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[100,1000], all_requests=all_requests.copy(), threshold=0.25)
+# print("visual 2 done")
+# visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[100,1000], all_requests=all_requests.copy(), threshold=0.5)
+# print("visual 3 done")
+# visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[500,5000], all_requests=all_requests.copy(), threshold=0.1)
+# print("visual 4 done")
+# visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[500,5000], all_requests=all_requests.copy(), threshold=0.25)
+# print("visual 5 done")
+# visualization_from_dataset(total_nodes=1000, num_servers=10, server_capacity=[500,5000], all_requests=all_requests.copy(), threshold=0.5)
+# print("visual 6 done")
+# serverNum=[10]
+# threshold=[0.1,0.25,0.5]
+# server_cap=[[100,1000],[500,5000]]
+# for x in serverNum:
+#     for y in threshold:
+#         for z in server_cap:
+#             visualization_from_dataset(total_nodes=1000, num_servers=x, server_capacity=z, all_requests=all_requests, threshold=y)
+
