@@ -340,7 +340,6 @@ def visualization_from_dataset(total_nodes, num_servers, server_capacity, all_re
     
             
             countReq=collections.Counter(server.requests)
-            countReq.pop('')
             for key,val in countReq.items():
                 if val>=threshold*server.capacity:
                     
